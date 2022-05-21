@@ -130,10 +130,6 @@ void Car::ApplicationFunctionSet_Init(void)
   //   /*Clear serial port buffer...*/
   // }
 
-  // Initialize IR
-  pinMode(9,INPUT);
-  IrReceiver.begin(9, ENABLE_LED_FEEDBACK);
-
   Application_SmartRobotCarxxx0.Functional_Mode = ObstacleAvoidance_mode;
 }
 
@@ -584,15 +580,15 @@ void Car::Track(void) {
     {
       /*Achieve straight and uniform speed movement*/
       ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
-      if(IrReceiver.decode()) {
-        uint32_t data;
-        do {
-          data = IrReceiver.decodedIRData.decodedRawData;
-          delay(100);
-        } while(data == 0xDEADC0DE);
-      } else {
+      // if(IrReceiver.decode()) {
+      //   uint32_t data;
+      //   do {
+      //     data = IrReceiver.decodedIRData.decodedRawData;
+      //     delay(100);
+      //   } while(data == 0xDEADC0DE);
+      // } else {
         delay(1000);
-      }
+      // }
       ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, CAR_CRUISE_SPEED);
       delay(400);
     } else {
@@ -667,9 +663,9 @@ void Car::ObstacleAvoidance(void)
       SmartRobotCarMotionControl direction;
       int distance = 360 - max(startingYaw, targetYaw);
       if(distance + min(startingYaw, targetYaw) > 180) {
-        direction = Left;
+        direction = (startingYaw < targetYaw) ? Right: Left;
       } else {
-        direction = Right;
+        direction = (startingYaw < targetYaw) ? Left: Right;
       }
 
       Serial.println(targetYaw);
