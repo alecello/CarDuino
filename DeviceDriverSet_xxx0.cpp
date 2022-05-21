@@ -10,7 +10,7 @@
 //#include "PinChangeInt.h"
 #include <avr/wdt.h>
 static void
-delay_xxx(uint16_t _ms)
+delayMS(uint16_t _ms)
 {
   wdt_reset();
   for (unsigned long i = 0; i < _ms; i++)
@@ -33,7 +33,7 @@ void DeviceDriverSet_RBGLED::DeviceDriverSet_RBGLED_xxx(uint16_t Duration, uint8
   {
     leds[Number] = colour;
     FastLED.show();
-    delay_xxx(Duration);
+    delayMS(Duration);
   }
 }
 void DeviceDriverSet_RBGLED::DeviceDriverSet_RBGLED_Init(uint8_t set_Brightness)
@@ -46,10 +46,10 @@ void DeviceDriverSet_RBGLED::DeviceDriverSet_RBGLED_Test(void)
 {
   leds[0] = CRGB::White;
   FastLED.show();
-  delay_xxx(50);
+  delayMS(50);
   leds[1] = CRGB::Red;
   FastLED.show();
-  delay_xxx(50);
+  delayMS(50);
   DeviceDriverSet_RBGLED_xxx(50 /*Duration*/, 5 /*Traversal_Number*/, CRGB::Black);
 }
 #endif
@@ -187,17 +187,17 @@ void DeviceDriverSet_Motor::DeviceDriverSet_Motor_Test(void)
   analogWrite(PIN_Motor_PWMA, 100);
   digitalWrite(PIN_Motor_BIN_1, HIGH);
   analogWrite(PIN_Motor_PWMB, 100);
-  delay_xxx(1000);
+  delayMS(1000);
 
   digitalWrite(PIN_Motor_STBY, LOW);
-  delay_xxx(1000);
+  delayMS(1000);
   digitalWrite(PIN_Motor_STBY, HIGH);
   digitalWrite(PIN_Motor_AIN_1, LOW);
   analogWrite(PIN_Motor_PWMA, 100);
   digitalWrite(PIN_Motor_BIN_1, LOW);
   analogWrite(PIN_Motor_PWMB, 100);
 
-  delay_xxx(1000);
+  delayMS(1000);
 }
 #endif
 
@@ -332,12 +332,12 @@ void DeviceDriverSet_Servo::DeviceDriverSet_Servo_Init(unsigned int Position_ang
   myservo.attach(PIN_Servo_z, 500, 2400); //500: 0 degree  2400: 180 degree
   myservo.attach(PIN_Servo_z);
   myservo.write(Position_angle); //sets the servo position according to the 90（middle）
-  delay_xxx(500);
+  delayMS(500);
 
   myservo.attach(PIN_Servo_y, 500, 2400); //500: 0 degree  2400: 180 degree
   myservo.attach(PIN_Servo_y);
   myservo.write(Position_angle); //sets the servo position according to the 90（middle）
-  delay_xxx(500);
+  delayMS(500);
   myservo.detach();
 }
 #if _Test_DeviceDriverSet
@@ -347,9 +347,9 @@ void DeviceDriverSet_Servo::DeviceDriverSet_Servo_Test(void)
   {
     myservo.attach(PIN_Servo_z);
     myservo.write(180);
-    delay_xxx(500);
+    delayMS(500);
     myservo.write(0);
-    delay_xxx(500);
+    delayMS(500);
   }
 
   // for (uint8_t i = 0; i < 6; i++)
@@ -383,7 +383,7 @@ void DeviceDriverSet_Servo::DeviceDriverSet_Servo_control(unsigned int Position_
 {
   myservo.attach(PIN_Servo_z);
   myservo.write(Position_angle);
-  delay_xxx(450);
+  delayMS(450);
   myservo.detach();
 }
 //Servo motor control:Servo motor number and position angle
@@ -401,7 +401,7 @@ void DeviceDriverSet_Servo::DeviceDriverSet_Servo_controls(uint8_t Servo, unsign
     }
     myservo.attach(PIN_Servo_z);
     myservo.write(10 * Position_angle);
-    delay_xxx(500);
+    delayMS(500);
   }
   if (Servo == 2 || Servo == 3) //Servo_y
   {
@@ -416,7 +416,7 @@ void DeviceDriverSet_Servo::DeviceDriverSet_Servo_controls(uint8_t Servo, unsign
     }
     myservo.attach(PIN_Servo_y);
     myservo.write(10 * Position_angle);
-    delay_xxx(500);
+    delayMS(500);
   }
   myservo.detach();
 }
