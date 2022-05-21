@@ -11,7 +11,6 @@
 
 void setup()
 {
-  // put your setup code here, to run once:
   Application_FunctionSet.ApplicationFunctionSet_Init();
   // wdt_enable(WDTO_2S);
 }
@@ -23,10 +22,10 @@ void loop()
   Application_FunctionSet.ApplicationFunctionSet_SensorDataUpdate();
   Application_FunctionSet.ApplicationFunctionSet_KeyCommand();
   Application_FunctionSet.ApplicationFunctionSet_RGB();
-  /* Application_FunctionSet.Follow();
-  */ Application_FunctionSet.ObstacleAvoidance();
-  /* Application_FunctionSet.ApplicationFunctionSet_Tracking();
-  Application_FunctionSet.ApplicationFunctionSet_Rocker();
+  /* Application_FunctionSet.Follow(); */
+  Application_FunctionSet.ObstacleAvoidance();
+  Application_FunctionSet.Track();
+  /* Application_FunctionSet.ApplicationFunctionSet_Rocker();
   Application_FunctionSet.ApplicationFunctionSet_Standby();
   Application_FunctionSet.ApplicationFunctionSet_IRrecv();
   Application_FunctionSet.ApplicationFunctionSet_SerialPortDataAnalysis();

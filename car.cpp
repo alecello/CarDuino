@@ -129,6 +129,11 @@ void Car::ApplicationFunctionSet_Init(void)
   // {
   //   /*Clear serial port buffer...*/
   // }
+
+  // Initialize IR
+  pinMode(9,INPUT);
+  IrReceiver.begin(9, ENABLE_LED_FEEDBACK);
+
   Application_SmartRobotCarxxx0.Functional_Mode = ObstacleAvoidance_mode;
 }
 
@@ -563,12 +568,11 @@ void Car::ApplicationFunctionSet_Rocker(void)
 }
 
 /*Line tracking mode*/
-void Car::ApplicationFunctionSet_Tracking(void)
-{
+void Car::Track(void) {
   static boolean timestamp = true;
   static boolean BlindDetection = true;
   static unsigned long MotorRL_time = 0;
-  if (Application_SmartRobotCarxxx0.Functional_Mode == TraceBased_mode)
+  if (Application_SmartRobotCarxxx0.Functional_Mode == ObstacleAvoidance_mode)
   {
     if (Car_LeaveTheGround == false) //Check if the car leaves the ground
     {
@@ -576,72 +580,26 @@ void Car::ApplicationFunctionSet_Tracking(void)
       return;
     }
 
-    // int getAnaloguexxx_L = AppITR20001.DeviceDriverSet_ITR20001_getAnaloguexxx_L();
-    // int getAnaloguexxx_M = AppITR20001.DeviceDriverSet_ITR20001_getAnaloguexxx_M();
-    // int getAnaloguexxx_R = AppITR20001.DeviceDriverSet_ITR20001_getAnaloguexxx_R();
-#if _Test_print
-    static unsigned long print_time = 0;
-    if (millis() - print_time > 500)
-    {
-      print_time = millis();
-      Serial.print("ITR20001_getAnaloguexxx_L=");
-      Serial.println(getAnaloguexxx_L);
-      Serial.print("ITR20001_getAnaloguexxx_M=");
-      Serial.println(getAnaloguexxx_M);
-      Serial.print("ITR20001_getAnaloguexxx_R=");
-      Serial.println(getAnaloguexxx_R);
-    }
-#endif
-    if (valueWithin(TrackingData_M, TrackingDetection_S, TrackingDetection_E))
+    if ((valueWithin(TrackingData_M, TrackingDetection_S, TrackingDetection_E))&&(valueWithin(TrackingData_R, TrackingDetection_S, TrackingDetection_E)&&(valueWithin(TrackingData_L, TrackingDetection_S, TrackingDetection_E))))
     {
       /*Achieve straight and uniform speed movement*/
-      ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, 100);
+      ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
+      if(IrReceiver.decode()) {
+        uint32_t data;
+        do {
+          data = IrReceiver.decodedIRData.decodedRawData;
+          delay(100);
+        } while(data == 0xDEADC0DE);
+      } else {
+        delay(1000);
+      }
+      ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, CAR_CRUISE_SPEED);
+      delay(400);
+    } else {
+      ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, CAR_CRUISE_SPEED);
       timestamp = true;
       BlindDetection = true;
     }
-    else if (valueWithin(TrackingData_R, TrackingDetection_S, TrackingDetection_E))
-    {
-      /*Turn right*/
-      ApplicationFunctionSet_SmartRobotCarMotionControl(Right, 100);
-      timestamp = true;
-      BlindDetection = true;
-    }
-    else if (valueWithin(TrackingData_L, TrackingDetection_S, TrackingDetection_E))
-    {
-      /*Turn left*/
-      ApplicationFunctionSet_SmartRobotCarMotionControl(Left, 100);
-      timestamp = true;
-      BlindDetection = true;
-    }
-    else ////The car is not on the black line. execute Blind scan
-    {
-      if (timestamp == true) //acquire timestamp
-      {
-        timestamp = false;
-        MotorRL_time = millis();
-        ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
-      }
-      /*Blind Detection*/
-      if ((valueWithin((millis() - MotorRL_time), 0, 200) || valueWithin((millis() - MotorRL_time), 1600, 2000)) && BlindDetection == true)
-      {
-        ApplicationFunctionSet_SmartRobotCarMotionControl(Right, 100);
-      }
-      else if (((valueWithin((millis() - MotorRL_time), 200, 1600))) && BlindDetection == true)
-      {
-        ApplicationFunctionSet_SmartRobotCarMotionControl(Left, 100);
-      }
-      else if ((valueWithin((millis() - MotorRL_time), 3000, 3500))) // Blind Detection ...s ?
-      {
-        BlindDetection = false;
-        ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
-      }
-    }
-  }
-  else if (false == timestamp)
-  {
-    BlindDetection = true;
-    timestamp = true;
-    MotorRL_time = 0;
   }
 }
 
@@ -672,7 +630,7 @@ void Car::ObstacleAvoidance(void)
       Serial.print(" Distance: ");
       Serial.println(detectedDistance);
 
-      if(!valueWithin(detectedDistance, 0, US_COLLISION_DISTANCE) && detectedDistance >= maxDistanceValue && (abs((US_ROTATION_STEP * step) -90) > abs((US_ROTATION_STEP * maxDistanceIndex) -90) || maxDistanceIndex == -1)) {
+      if(!valueWithin(detectedDistance, 0, US_COLLISION_DISTANCE) && detectedDistance >= maxDistanceValue && (abs((US_ROTATION_STEP * step) -90) >= abs((US_ROTATION_STEP * maxDistanceIndex) -90) || maxDistanceIndex == -1)) {
         Serial.print("[WIN] Angle: ");
         Serial.print(step * US_ROTATION_STEP);
         Serial.print(" Distance: ");
@@ -706,16 +664,15 @@ void Car::ObstacleAvoidance(void)
       Serial.println(startingYaw);
       Serial.print("Target yaw: ");
 
-      // Determinte turning direction (smaller distance).
-      // If clockwise arc > 180 smaller arc is counterclockwise
       SmartRobotCarMotionControl direction;
-      if(max(startingYaw, targetYaw) - min(startingYaw, targetYaw) > 180) {
+      int distance = 360 - max(startingYaw, targetYaw);
+      if(distance + min(startingYaw, targetYaw) > 180) {
         direction = Left;
       } else {
         direction = Right;
       }
 
-      Serial.print(targetYaw);
+      Serial.println(targetYaw);
 
       // Calculate distance between starting point and target point
       int targetDistance = max(startingYaw, targetYaw) - min(startingYaw, targetYaw);

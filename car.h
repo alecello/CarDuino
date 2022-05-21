@@ -19,7 +19,7 @@ public:
   void ApplicationFunctionSet_RGB(void);
   void ApplicationFunctionSet_Expression(void);
   void ApplicationFunctionSet_Rocker(void);             //APP Rocker Control
-  void ApplicationFunctionSet_Tracking(void);           //Line Tracking Mode
+  void Track(void);           //Line Tracking Mode
   void ObstacleAvoidance(void);           //Obstacle Avoidance
   void Follow(void);             //Following Mode
   void ApplicationFunctionSet_Servo(uint8_t Set_Servo); //Servo Control
@@ -81,8 +81,8 @@ public:
   uint8_t Rocker_temp;
 
 public:
-  uint8_t TrackingDetection_S = 250;
-  uint16_t TrackingDetection_E = 850;
+  uint8_t TrackingDetection_S = 10;
+  uint16_t TrackingDetection_E = 40;
   uint16_t TrackingDetection_V = 950;
 
 public:
