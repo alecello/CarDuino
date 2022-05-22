@@ -10,6 +10,7 @@
 //#include <hardwareSerial.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 #include "car.h"
 #include "DeviceDriverSet_xxx0.h"
 
@@ -25,10 +26,14 @@
 #define CAR_TURN_INTERVAL_MS   250
 #define CAR_TURN_TOLERANCE_DEG 10
 
+#define SEMAPHORE_GREEN 0xF00DCAFE
+#define SEMAPHORE_RED   0xDEADC0DE
+
 #define _is_print 1
 #define _Test_print 0
 
 Car Application_FunctionSet;
+IRrecv IRReceiver(9);
 
 /*Hardware device object list*/
 MPU6050_getdata AppMPU6050getdata;
@@ -119,16 +124,18 @@ void Car::ApplicationFunctionSet_Init(void)
   AppServo.DeviceDriverSet_Servo_Init(90);
   AppKey.DeviceDriverSet_Key_Init();
   AppRBG_LED.DeviceDriverSet_RBGLED_Init(20);
+
   AppIRrecv.DeviceDriverSet_IRrecv_Init();
+  Serial.println("Initialized IR Receiver");
+
   AppULTRASONIC.DeviceDriverSet_ULTRASONIC_Init();
   AppITR20001.DeviceDriverSet_ITR20001_Init();
   res_error = AppMPU6050getdata.MPU6050_dveInit();
   AppMPU6050getdata.MPU6050_calibration();
 
-  // while (Serial.read() >= 0)
-  // {
-  //   /*Clear serial port buffer...*/
-  // }
+  // Initialize IR Receiver
+  IRReceiver.enableIRIn();
+  Serial.println("Enabled IR Receiver");
 
   Application_SmartRobotCarxxx0.Functional_Mode = ObstacleAvoidance_mode;
 }
@@ -568,34 +575,57 @@ void Car::Track(void) {
   static boolean timestamp = true;
   static boolean BlindDetection = true;
   static unsigned long MotorRL_time = 0;
-  if (Application_SmartRobotCarxxx0.Functional_Mode == ObstacleAvoidance_mode)
+  if (Car_LeaveTheGround == false) //Check if the car leaves the ground
   {
-    if (Car_LeaveTheGround == false) //Check if the car leaves the ground
-    {
-      ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
-      return;
-    }
+    ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
+    return;
+  }
 
-    if ((valueWithin(TrackingData_M, TrackingDetection_S, TrackingDetection_E))&&(valueWithin(TrackingData_R, TrackingDetection_S, TrackingDetection_E)&&(valueWithin(TrackingData_L, TrackingDetection_S, TrackingDetection_E))))
-    {
-      /*Achieve straight and uniform speed movement*/
-      ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
-      // if(IrReceiver.decode()) {
-      //   uint32_t data;
-      //   do {
-      //     data = IrReceiver.decodedIRData.decodedRawData;
-      //     delay(100);
-      //   } while(data == 0xDEADC0DE);
-      // } else {
-        delay(1000);
-      // }
-      ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, CAR_CRUISE_SPEED);
-      delay(400);
-    } else {
-      ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, CAR_CRUISE_SPEED);
-      timestamp = true;
-      BlindDetection = true;
-    }
+  if ((valueWithin(TrackingData_M, TrackingDetection_S, TrackingDetection_E))&&(valueWithin(TrackingData_R, TrackingDetection_S, TrackingDetection_E)&&(valueWithin(TrackingData_L, TrackingDetection_S, TrackingDetection_E))))
+  {
+    /*Achieve straight and uniform speed movement*/
+    ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
+    unsigned long decoded;
+
+    do {
+      // Try to read semaphore
+      decode_results IRData;
+      int semaphoreDetectionAttempts = 10;
+      int semaphoreAttemptSuccessful = 0;
+      do {
+        Serial.print(10-semaphoreDetectionAttempts);
+        delay(200);
+        semaphoreAttemptSuccessful = IRReceiver.decode(&IRData);
+        IRReceiver.resume();
+      } while(semaphoreAttemptSuccessful == 0 && --semaphoreDetectionAttempts > 0);
+
+      if(semaphoreAttemptSuccessful == 0) {
+        // No semaphore detected.
+        Serial.println("No semaphore detected.");
+        break;
+      }
+      
+      unsigned long result  = IRData.value;
+      unsigned long oracle = ULONG_MAX >> sizeof(unsigned long) * 4;
+
+      decoded = 0;
+      for(int i = 0; i < sizeof(unsigned long) * 8; ++i) {
+        decoded |= ((result >> i) & 0x01) << (((sizeof(unsigned long) * 8) - 1) - i);
+      }
+
+      Serial.print("Semaphore state: ");
+      Serial.print(result, HEX);
+      Serial.print("/");
+      Serial.println(decoded, HEX);
+    } while (decoded != SEMAPHORE_GREEN);
+    
+    Serial.println("Leaving line");
+    ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, CAR_CRUISE_SPEED);
+    delay(400);
+  } else {
+    ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, CAR_CRUISE_SPEED);
+    timestamp = true;
+    BlindDetection = true;
   }
 }
 
@@ -608,7 +638,7 @@ void Car::ObstacleAvoidance(void)
   // Read the distance
   uint16_t detectedDistance = 0;
   AppULTRASONIC.DeviceDriverSet_ULTRASONIC_Get(&detectedDistance);
-  Serial.println(detectedDistance);
+  // Serial.println(detectedDistance);
 
   if(valueWithin(detectedDistance, 0, US_COLLISION_DISTANCE)) {
     uint16_t maxDistanceValue = 0;
@@ -704,7 +734,8 @@ void Car::ObstacleAvoidance(void)
       ApplicationFunctionSet_SmartRobotCarMotionControl(Backward, CAR_CRUISE_SPEED);
     }
   } else {
-    ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, CAR_CRUISE_SPEED);
+    this->Track();
+    // ApplicationFunctionSet_SmartRobotCarMotionControl(Forward, CAR_CRUISE_SPEED);
   }
 }
 
@@ -912,7 +943,7 @@ void Car::CMD_inspect_xxx0(void)
 {
   if (Application_SmartRobotCarxxx0.Functional_Mode == CMD_inspect)
   {
-    Serial.println("CMD_inspect");
+    // Serial.println("CMD_inspect");
     delay(100);
   }
 }
