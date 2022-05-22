@@ -1,5 +1,5 @@
 {
     "sketch": "CarDuino.ino",
     "board": "arduino:avr:uno",
-    "port": "COM5"
+    "port": "COM4"
 }

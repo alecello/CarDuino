@@ -642,7 +642,7 @@ void Car::ObstacleAvoidance(void)
     Serial.println("SONO NEL NOSTROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
      //checkALato
      ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
-       
+
       int leftMinDistance = 500;
       int leftMinAngolo;
       int rightMinDistance = 500;
@@ -677,13 +677,13 @@ void Car::ObstacleAvoidance(void)
 
         if(rapporto > 3){
           ApplicationFunctionSet_SmartRobotCarMotionControl(Backward, 70);
-          delay(400);
+          delay(350);
           
           if(rapporto>5.5){
               ApplicationFunctionSet_SmartRobotCarMotionControl(Left, 70);
               delay(300);
           }else{
-              ApplicationFunctionSet_SmartRobotCarMotionControl(LeftForward, 70);
+              ApplicationFunctionSet_SmartRobotCarMotionControl(LeftForward, 150);
               delay(rapporto*30);
           }
            ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 15);
@@ -695,12 +695,12 @@ void Car::ObstacleAvoidance(void)
 
           
           ApplicationFunctionSet_SmartRobotCarMotionControl(Backward, 70);
-          delay(400);
+          delay(350);
           if(rapporto<0.18){
               ApplicationFunctionSet_SmartRobotCarMotionControl(Right, 70);
               delay(300);            
              }else{
-              ApplicationFunctionSet_SmartRobotCarMotionControl(RightForward, 70);
+              ApplicationFunctionSet_SmartRobotCarMotionControl(RightForward, 150);
               delay(30/rapporto);
           }          
            ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 15);
