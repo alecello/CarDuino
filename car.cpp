@@ -21,7 +21,7 @@
 #define US_ROTATION_STEP      30
 #define US_COLLISION_DISTANCE 20
 
-#define CAR_CRUISE_SPEED       50
+#define CAR_CRUISE_SPEED       100
 #define CAR_TURN_SPEED         50
 #define CAR_TURN_INTERVAL_MS   100
 #define CAR_TURN_TOLERANCE_DEG 10
@@ -677,7 +677,7 @@ void Car::ObstacleAvoidance(void)
 
         if(rapporto > 3){
           ApplicationFunctionSet_SmartRobotCarMotionControl(Backward, 70);
-          delay(1000);
+          delay(400);
           
           if(rapporto>5.5){
               ApplicationFunctionSet_SmartRobotCarMotionControl(Left, 70);
@@ -695,7 +695,7 @@ void Car::ObstacleAvoidance(void)
 
           
           ApplicationFunctionSet_SmartRobotCarMotionControl(Backward, 70);
-          delay(1000);
+          delay(400);
           if(rapporto<0.18){
               ApplicationFunctionSet_SmartRobotCarMotionControl(Right, 70);
               delay(300);            
