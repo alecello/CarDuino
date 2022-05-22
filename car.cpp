@@ -21,9 +21,9 @@
 #define US_ROTATION_STEP      30
 #define US_COLLISION_DISTANCE 20
 
-#define CAR_CRUISE_SPEED       100
+#define CAR_CRUISE_SPEED       50
 #define CAR_TURN_SPEED         50
-#define CAR_TURN_INTERVAL_MS   250
+#define CAR_TURN_INTERVAL_MS   100
 #define CAR_TURN_TOLERANCE_DEG 10
 
 #define SEMAPHORE_GREEN 0xF00DCAFE
@@ -46,6 +46,7 @@ DeviceDriverSet_Motor AppMotor;
 DeviceDriverSet_ULTRASONIC AppULTRASONIC;
 DeviceDriverSet_Servo AppServo;
 DeviceDriverSet_IRrecv AppIRrecv;
+int contatore = 0;
 /*f(x) int */
 static boolean
 valueWithin(long x, long s, long e) //f(x)
@@ -575,6 +576,7 @@ void Car::Track(void) {
   static boolean timestamp = true;
   static boolean BlindDetection = true;
   static unsigned long MotorRL_time = 0;
+  
   if (Car_LeaveTheGround == false) //Check if the car leaves the ground
   {
     ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
@@ -635,12 +637,87 @@ void Car::ObstacleAvoidance(void)
     return;
   }
 
+  contatore++;
+  if(contatore > 30){
+    Serial.println("SONO NEL NOSTROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+     //checkALato
+     ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 0);
+       
+      int leftMinDistance = 500;
+      int leftMinAngolo;
+      int rightMinDistance = 500;
+      int rightMinAngolo;
+      uint16_t get_Distance;
+     for (uint8_t i = 0; i <= 7; i += 1) //1、3、5 Omnidirectional detection of obstacle avoidance status
+      {
+        AppServo.DeviceDriverSet_Servo_control(10 * i /*Position_angle*/);
+      delayMS(20);
+        AppULTRASONIC.DeviceDriverSet_ULTRASONIC_Get(&get_Distance /*out*/);
+        
+          if(get_Distance < leftMinDistance){
+            leftMinDistance = get_Distance;
+            leftMinAngolo = i;
+          }
+        }
+
+        for (uint8_t i = 11; i <= 18; i += 1) //1、3、5 Omnidirectional detection of obstacle avoidance status
+      {
+        AppServo.DeviceDriverSet_Servo_control(10 * i /*Position_angle*/);
+      delayMS(20);
+        AppULTRASONIC.DeviceDriverSet_ULTRASONIC_Get(&get_Distance /*out*/);
+        
+          if(get_Distance < rightMinDistance){
+            rightMinDistance = get_Distance;
+            rightMinAngolo = i;
+          }
+        }
+        AppServo.DeviceDriverSet_Servo_control(US_ROTATION_INITIAL);
+
+        float rapporto = rightMinDistance / leftMinDistance;
+
+        if(rapporto > 3){
+          ApplicationFunctionSet_SmartRobotCarMotionControl(Backward, 70);
+          delay(1000);
+          
+          if(rapporto>5.5){
+              ApplicationFunctionSet_SmartRobotCarMotionControl(Left, 70);
+              delay(300);
+          }else{
+              ApplicationFunctionSet_SmartRobotCarMotionControl(LeftForward, 70);
+              delay(rapporto*30);
+          }
+           ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 15);
+
+
+           
+        }else if(rapporto < 0.3){
+
+
+          
+          ApplicationFunctionSet_SmartRobotCarMotionControl(Backward, 70);
+          delay(1000);
+          if(rapporto<0.18){
+              ApplicationFunctionSet_SmartRobotCarMotionControl(Right, 70);
+              delay(300);            
+             }else{
+              ApplicationFunctionSet_SmartRobotCarMotionControl(RightForward, 70);
+              delay(30/rapporto);
+          }          
+           ApplicationFunctionSet_SmartRobotCarMotionControl(stop_it, 15);
+
+        }
+       
+   contatore = 0; 
+  }
+  
+
   // Read the distance
   uint16_t detectedDistance = 0;
   AppULTRASONIC.DeviceDriverSet_ULTRASONIC_Get(&detectedDistance);
-  // Serial.println(detectedDistance);
+  Serial.println("sono nel codice di celooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"+detectedDistance);
 
   if(valueWithin(detectedDistance, 0, US_COLLISION_DISTANCE)) {
+    Serial.println("trovata roba davantiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii");
     uint16_t maxDistanceValue = 0;
     int      maxDistanceIndex = -1;
 
@@ -943,7 +1020,7 @@ void Car::CMD_inspect_xxx0(void)
 {
   if (Application_SmartRobotCarxxx0.Functional_Mode == CMD_inspect)
   {
-    // Serial.println("CMD_inspect");
+    Serial.println("CMD_inspect");
     delay(100);
   }
 }
